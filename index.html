@@ -4,49 +4,247 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Result Portal | Rahmaniyya Public School</title>
-    <link rel="stylesheet" href="style.css">
+    <!-- Include Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --navy: #001f3f;
+            --white: #ffffff;
+            --gray: #f8f9fa;
+            --border: #dee2e6;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            margin: 0;
+            background-color: var(--white);
+            color: #333;
+        }
+
+        /* Header & Footer */
+        header, footer {
+            background-color: var(--navy);
+            color: var(--white);
+            text-align: center;
+            padding: 2rem 1rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        /* Main Layout */
+        main {
+            min-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        /* Watermark Logo */
+        .logo-watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.05;
+            z-index: -1;
+            width: 300px;
+        }
+
+        /* Card Components */
+        .card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            width: 100%;
+            max-width: 550px;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .hidden { display: none; }
+
+        /* Countdown & Inputs */
+        #countdown {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--navy);
+            letter-spacing: 2px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            margin: 12px 0;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-primary { background: var(--navy); color: white; }
+        .btn-primary:hover { opacity: 0.9; }
+
+        /* Result Table Design */
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .result-table th, .result-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+        }
+        .result-table th { background: var(--gray); }
+
+        @media print {
+            .btn, #login-container, footer { display: none; }
+            .card { box-shadow: none; border: 1px solid #eee; }
+        }
+    </style>
 </head>
 <body>
 
     <header>
-        <div class="header-content">
-            <h1>RAHMANIYYA PUBLIC SCHOOL</h1>
-            <p>AKAMPADAM</p>
-        </div>
+        <div style="font-size: 1.5rem; font-weight: bold;">RAHMANIYYA PUBLIC SCHOOL</div>
+        <div style="letter-spacing: 3px;">AKAMPADAM</div>
     </header>
 
     <main>
-        <div class="logo-watermark">
-            <img src="your-logo-path.png" alt="School Logo">
-        </div>
+        <img src="image_856095.png" class="logo-watermark" alt="School Logo">
 
-        <!-- Countdown Section -->
+        <!-- Countdown Timer -->
         <div id="timer-container" class="card">
-            <h2>Results Announcement In:</h2>
-            <div id="countdown">00:00:00:00</div>
+            <h3>RESULTS ANNOUNCEMENT</h3>
+            <div id="countdown">00:00:00</div>
+            <p style="color: #666; margin-top: 10px;">The portal will open automatically at the scheduled time.</p>
         </div>
 
-        <!-- Login Section (Initially Hidden until time reached) -->
+        <!-- Student Login -->
         <div id="login-container" class="card hidden">
-            <h2>Check Your Result</h2>
-            <input type="text" id="studentId" placeholder="Admission Number">
+            <h2>View Examination Result</h2>
+            <p>Please enter your credentials</p>
+            <input type="text" id="admissionNo" placeholder="Admission Number (e.g., 2025/0267)">
             <input type="date" id="dob" placeholder="Date of Birth">
-            <button onclick="viewResult()" class="btn-primary">View Result</button>
+            <button onclick="fetchStudentResult()" class="btn btn-primary">SEARCH RESULT</button>
         </div>
 
-        <!-- Result Display -->
-        <div id="result-display" class="card hidden">
+        <!-- Result Card -->
+        <div id="result-container" class="card hidden" style="max-width: 800px;">
             <div id="printable-area">
-                <!-- Result Content Generated by JS -->
+                <!-- Data populated by JS -->
             </div>
-            <button onclick="window.print()" class="btn-secondary">Download PDF</button>
+            <button onclick="window.print()" class="btn btn-primary" style="margin-top: 20px;">DOWNLOAD MARK SHEET</button>
         </div>
     </main>
 
     <footer>
-        <p>&copy; 2026 Rahmaniyya Public School Akampadam. All Rights Reserved.</p>
+        <p>&copy; 2026 Rahmaniyya Public School Akampadam</p>
     </footer>
 
-    <script src="script.js"></script>
+    <script>
+        // 1. PROJECT CONFIGURATION
+        const SUPABASE_URL = 'https://wyxgixlqgwjexlkwccpf.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5eGdpeGxxZ3dqZXhsa3djY3BmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDEyNzIsImV4cCI6MjA5MzkxNzI3Mn0.udgw8JRxGNUdcT9mY7_hsnIwPtheNKm3qhCm_Y0GUec';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Result Publish Time (Change this to test)
+        const publishTime = new Date("May 25, 2026 10:00:00").getTime();
+
+        // 2. COUNTDOWN LOGIC
+        const x = setInterval(() => {
+            const now = new Date().getTime();
+            const distance = publishTime - now;
+
+            if (distance < 0) {
+                clearInterval(x);
+                document.getElementById("timer-container").classList.add("hidden");
+                document.getElementById("login-container").classList.remove("hidden");
+            } else {
+                const h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const s = Math.floor((distance % (1000 * 60)) / 1000);
+                document.getElementById("countdown").innerHTML = h + "h " + m + "m " + s + "s ";
+            }
+        }, 1000);
+
+        // 3. GRADING LOGIC
+        function getGrade(pct) {
+            if (pct >= 90) return "A+";
+            if (pct >= 80) return "A";
+            if (pct >= 70) return "B+";
+            if (pct >= 60) return "B";
+            if (pct >= 50) return "C+";
+            if (pct >= 40) return "C";
+            return "F";
+        }
+
+        // 4. FETCH DATA
+        async function fetchStudentResult() {
+            const adm = document.getElementById('admissionNo').value;
+            const dob = document.getElementById('dob').value;
+
+            const { data, error } = await supabase
+                .from('results') // Table name in Supabase
+                .select('*')
+                .eq('admission_no', adm)
+                .eq('dob', dob)
+                .single();
+
+            if (error || !data) {
+                alert("Student not found. Please check Admission Number and DOB.");
+                return;
+            }
+
+            displayResult(data);
+        }
+
+        // 5. DISPLAY RESULT
+        function displayResult(student) {
+            const container = document.getElementById('printable-area');
+            document.getElementById('login-container').classList.add('hidden');
+            document.getElementById('result-container').classList.remove('hidden');
+
+            const subjects = student.grade_level.includes('III') || student.grade_level.includes('IV') 
+                ? ['English', 'Malayalam', 'Hindi', 'Arabi', 'Science', 'GK', 'IT', 'Maths', 'Social Science']
+                : ['English', 'Malayalam', 'Hindi', 'Arabi', 'EVS', 'GK', 'IT', 'Maths'];
+
+            let tableHTML = `<table class="result-table"><tr><th>Subject</th><th>Mark</th></tr>`;
+            subjects.forEach(sub => {
+                const mark = student[sub.toLowerCase().replace(' ', '_')] || 0;
+                tableHTML += `<tr><td>${sub}</td><td>${mark}</td></tr>`;
+            });
+            tableHTML += `</table>`;
+
+            container.innerHTML = `
+                <div style="text-align:left;">
+                    <h3 style="text-align:center; color:var(--navy);">ACADEMIC EVALUATION RECORD</h3>
+                    <hr>
+                    <p><strong>Student Name:</strong> ${student.name}</p>
+                    <p><strong>Admission No:</strong> ${student.admission_no}</p>
+                    <p><strong>Class:</strong> ${student.grade_level}</p>
+                    ${tableHTML}
+                    <div style="display: flex; justify-content: space-between; background: var(--gray); padding: 15px; border: 1px solid #ddd;">
+                        <span><strong>Total:</strong> ${student.total_marks}</span>
+                        <span><strong>Percentage:</strong> ${student.percentage}%</span>
+                        <span><strong>Grade:</strong> ${getGrade(student.percentage)}</span>
+                        <span><strong>Rank:</strong> ${student.rank}</span>
+                    </div>
+                </div>
+            `;
+        }
+    </script>
 </body>
 </html>
