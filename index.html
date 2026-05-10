@@ -27,7 +27,9 @@
             <img src="logo rah.png" alt="Logo" class="h-12 w-12 bg-white rounded-full p-1">
             <h1 class="text-xl font-bold uppercase tracking-wider">Rahmaniyya Public School Akampadam</h1>
         </div>
-        <button onclick="toggleAdminModal()" class="text-sm border border-white px-3 py-1 rounded hover:bg-white hover:text-navy transition">Admin Login</button>
+       <button onclick="toggleAdminModal()" class="bg-white text-navy text-sm font-bold px-4 py-2 rounded hover:bg-gray-200 transition">
+    Admin Login
+</button>
     </header>
 
     <main class="container mx-auto mt-10 p-4 max-w-2xl">
@@ -85,7 +87,7 @@
         </div>
     </main>
 
-    <div id="admin-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4">
+ <div id="admin-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50">
         <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-md">
             <h2 class="text-2xl font-bold mb-4 text-navy">Admin Access</h2>
             <input type="text" id="admin-id" placeholder="Login ID" class="w-full p-2 border rounded mb-3">
@@ -204,9 +206,17 @@
         }
 
         // Admin Logics
-        function toggleAdminModal() {
-            document.getElementById('admin-modal').classList.toggle('hidden');
-        }
+       function toggleAdminModal() {
+    const modal = document.getElementById('admin-modal');
+
+    if (modal.classList.contains('hidden')) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    } else {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}
 
         function loginAdmin() {
             const id = document.getElementById('admin-id').value;
