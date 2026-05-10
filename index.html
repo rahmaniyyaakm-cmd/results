@@ -65,6 +65,8 @@
                     <p><strong>Date of Birth:</strong> <span id="res-dob"></span></p>
                     <p><strong>Admission No:</strong> <span id="res-id"></span></p>
                     <p><strong>Class:</strong> <span id="res-class"></span></p>
+                    <p><strong>Attendance:</strong>
+<span id="res-attendance"></span></p>
                 </div>
                 <table class="w-full text-sm border-collapse border border-gray-400 mb-4">
                     <thead>
@@ -150,13 +152,17 @@
 
         <select id="m-class" class="p-2 border rounded" onchange="loadSubjects()">
             <option value="">Select Class</option>
-            <option value="KG">KG</option>
-            <option value="I">I</option>
-            <option value="II">II</option>
-            <option value="III">III</option>
-            <option value="IV">IV</option>
+          <option value="LKG">LKG</option>
+<option value="UKG">UKG</option>
+<option value="I">I</option>
+<option value="II">II</option>
+<option value="III">III</option>
+<option value="IV">IV</option>
         </select>
-
+<input type="text"
+id="m-attendance"
+placeholder="Attendance (Eg: 178/180)"
+class="p-2 border rounded">
     </div>
 
     <div id="subjects-area" class="mt-6 grid grid-cols-2 gap-4"></div>
@@ -188,6 +194,23 @@ const sb = window.supabase.createClient(SB_URL, SB_KEY);
 
         let publishDate = null;
 const SUBJECTS = {
+
+    "LKG": {
+        english: 100,
+        Malayalam: 100,
+        maths: 100,
+        EVS: 100,
+        Arabic: 100,
+        Nilavu: 100
+    },
+
+    "UKG": {
+        english: 100,
+        Maths: 100,
+        Malayalam: 100,
+        GK: 100,
+        Arabi: 100
+    },
 
     "I": {
         english: 100,
@@ -335,7 +358,8 @@ const SUBJECTS = {
             document.getElementById('res-dob').innerText = data.dob;
             document.getElementById('res-id').innerText = data.student_id;
             document.getElementById('res-class').innerText = data.grade_level;
-            
+            document.getElementById('res-attendance').innerText =
+data.attendance || '-';
             let html = '';
             for (const [sub, mark] of Object.entries(data.marks)) {
                 html += `<tr><td class="border border-gray-400 p-2">${sub}</td><td class="border border-gray-400 p-2 text-center">${mark}</td><td class="border border-gray-400 p-2 text-center">${data.total_marks_config[sub] || 100}</td></tr>`;
@@ -399,6 +423,8 @@ async function saveManualResult() {
     const student_name = document.getElementById('m-name').value;
     const dob = document.getElementById('m-dob').value;
     const grade_level = document.getElementById('m-class').value;
+    const attendance =
+document.getElementById('m-attendance').value;
 
     let marks = {};
     let totalConfig = {};
@@ -451,6 +477,7 @@ async function saveManualResult() {
         student_name,
         dob,
         grade_level,
+        attendance,
         marks,
         total_marks_config: totalConfig,
         overall_marks: obtained,
@@ -478,6 +505,7 @@ async function saveManualResult() {
             name: '',
             dob: '',
             class: '',
+            attendance: '',
             english: '',
             malayalam: '',
             hindhi: '',
@@ -580,7 +608,7 @@ const payload = {
     dob: excelDate,
 
                 grade_level: cls,
-
+attendance: row.attendance,
                 marks,
 
                 total_marks_config: subs,
