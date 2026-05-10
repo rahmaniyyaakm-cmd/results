@@ -112,6 +112,30 @@
                     <input type="datetime-local" id="publish-time" class="p-2 border rounded w-full mb-3">
                     <button onclick="saveSchedule()" class="bg-navy text-white px-4 py-2 rounded w-full">Set Timer</button>
                 </div>
+                <!-- Uploaded Results List -->
+<div class="mt-10 p-6 border rounded bg-white">
+    <h3 class="text-2xl font-bold mb-4 text-navy">
+        Uploaded Student Results
+    </h3>
+
+    <div class="overflow-x-auto">
+        <table class="w-full border-collapse border border-gray-300 text-sm">
+            <thead class="bg-gray-100">
+                <tr>
+                    <th class="border p-2">Student ID</th>
+                    <th class="border p-2">Name</th>
+                    <th class="border p-2">Class</th>
+                    <th class="border p-2">Percentage</th>
+                    <th class="border p-2">Grade</th>
+                    <th class="border p-2">Rank</th>
+                </tr>
+            </thead>
+
+            <tbody id="results-list">
+            </tbody>
+        </table>
+    </div>
+</div>
 <!-- Manual Entry -->
 <div class="mt-8 p-6 border rounded bg-yellow-50">
     <h3 class="font-bold text-xl mb-4">Manual Result Entry</h3>
@@ -546,8 +570,39 @@ async function saveManualResult() {
 
     reader.readAsArrayBuffer(file);
 }
+        async function loadResults() {
+
+    const { data, error } = await sb
+        .from('results')
+        .select('*')
+        .order('percentage', { ascending: false });
+
+    if(error) {
+        console.log(error);
+        return;
+    }
+
+    let html = '';
+
+    data.forEach(student => {
+
+        html += `
+            <tr>
+                <td class="border p-2">${student.student_id}</td>
+                <td class="border p-2">${student.student_name}</td>
+                <td class="border p-2">${student.grade_level}</td>
+                <td class="border p-2">${student.percentage}%</td>
+                <td class="border p-2">${student.overall_grade}</td>
+                <td class="border p-2">${student.rank}</td>
+            </tr>
+        `;
+    });
+
+    document.getElementById('results-list').innerHTML = html;
+}
 function logout() {
     document.getElementById('admin-dashboard').classList.add('hidden');
+    loadResults();
 }
         init();
     </script>
