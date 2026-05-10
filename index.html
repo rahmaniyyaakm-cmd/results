@@ -193,6 +193,7 @@ const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const sb = window.supabase.createClient(SB_URL, SB_KEY);
 
         let publishDate = null;
+
 const SUBJECTS = {
 
     "LKG": {
@@ -258,6 +259,7 @@ const SUBJECTS = {
         "Social Science": 50
     }
 };
+   
         // Initialize and check timer
         function loadSubjects() {
 
@@ -563,7 +565,11 @@ document.getElementById('m-attendance').value;
 
             for (const sub in subs) {
 
-                const val = Number(row[sub] || 0);
+                const excelKey = Object.keys(row).find(
+    key => key.toLowerCase() === sub.toLowerCase()
+);
+
+const val = Number(row[excelKey] || 0);
 
                 marks[sub] = val;
 
