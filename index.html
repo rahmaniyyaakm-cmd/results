@@ -562,13 +562,22 @@ async function saveManualResult() {
                 ).length + 1;
             }
 
-            const payload = {
+            let excelDate = row.dob;
 
-                student_id: String(row.student_id),
+if (typeof excelDate === 'number') {
 
-                student_name: row.name,
+    const jsDate = new Date((excelDate - 25569) * 86400 * 1000);
 
-                dob: row.dob,
+    excelDate = jsDate.toISOString().split('T')[0];
+}
+
+const payload = {
+
+    student_id: String(row.student_id),
+
+    student_name: row.name,
+
+    dob: excelDate,
 
                 grade_level: cls,
 
