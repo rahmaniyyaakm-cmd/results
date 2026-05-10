@@ -364,6 +364,7 @@ function toggleAdminModal() {
             if(id === 'rahmaniyyaakm@gmail.com' && pw === 'Rahmaniyya@2004') {
                 document.getElementById('admin-modal').classList.add('hidden');
                 document.getElementById('admin-dashboard').classList.remove('hidden');
+                loadResults();
             } else {
                 alert("Invalid Credentials");
             }
@@ -493,11 +494,11 @@ async function saveManualResult() {
 
     XLSX.writeFile(wb, "result_template.xlsx");
 }
-        async function handleExcel() {
+       async function handleExcel() {
 
     const file = document.getElementById('excel-file').files[0];
 
-    if(!file) {
+    if (!file) {
         alert("Select Excel File");
         return;
     }
@@ -514,18 +515,25 @@ async function saveManualResult() {
 
         const rows = XLSX.utils.sheet_to_json(sheet);
 
-        for(const row of rows) {
+        console.log(rows);
+
+        for (const row of rows) {
 
             let marks = {};
 
             let total = 0;
             let obtained = 0;
 
-            const cls = row.class;
+            const cls = String(row.class).trim().toUpperCase();
 
             const subs = SUBJECTS[cls];
 
-            for(const sub in subs) {
+            if (!subs) {
+                console.log("Invalid Class:", cls);
+                continue;
+            }
+
+            for (const sub in subs) {
 
                 const val = Number(row[sub] || 0);
 
@@ -540,9 +548,23 @@ async function saveManualResult() {
 
             const grade = calculateGrade(percentage);
 
-            await sb.from('results').insert({
+            const { data: classData } = await sb
+                .from('results')
+                .select('*')
+                .eq('grade_level', cls);
 
-                student_id: row.student_id,
+            let rank = 1;
+
+            if (classData) {
+
+                rank = classData.filter(
+                    x => Number(x.percentage) > Number(percentage)
+                ).length + 1;
+            }
+
+            const payload = {
+
+                student_id: String(row.student_id),
 
                 student_name: row.name,
 
@@ -560,12 +582,24 @@ async function saveManualResult() {
 
                 overall_grade: grade,
 
-                rank: 1
+                rank
+            };
 
-            });
+            console.log(payload);
+
+            const { error } = await sb
+                .from('results')
+                .insert(payload);
+
+            if (error) {
+                console.log(error);
+                alert(error.message);
+            }
         }
 
         alert("Excel Upload Completed");
+
+        loadResults();
     };
 
     reader.readAsArrayBuffer(file);
@@ -601,8 +635,12 @@ async function saveManualResult() {
     document.getElementById('results-list').innerHTML = html;
 }
 function logout() {
-    document.getElementById('admin-dashboard').classList.add('hidden');
-    loadResults();
+
+    document.getElementById('admin-dashboard')
+        .classList.add('hidden');
+
+    document.getElementById('admin-modal')
+        .style.display = 'none';
 }
         init();
     </script>
