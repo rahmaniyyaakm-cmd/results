@@ -112,9 +112,41 @@
                     <input type="datetime-local" id="publish-time" class="p-2 border rounded w-full mb-3">
                     <button onclick="saveSchedule()" class="bg-navy text-white px-4 py-2 rounded w-full">Set Timer</button>
                 </div>
+<!-- Manual Entry -->
+<div class="mt-8 p-6 border rounded bg-yellow-50">
+    <h3 class="font-bold text-xl mb-4">Manual Result Entry</h3>
 
+    <div class="grid grid-cols-2 gap-4">
+
+        <input type="text" id="m-student-id" placeholder="Student ID" class="p-2 border rounded">
+
+        <input type="text" id="m-name" placeholder="Student Name" class="p-2 border rounded">
+
+        <input type="date" id="m-dob" class="p-2 border rounded">
+
+        <select id="m-class" class="p-2 border rounded" onchange="loadSubjects()">
+            <option value="">Select Class</option>
+            <option value="KG">KG</option>
+            <option value="I">I</option>
+            <option value="II">II</option>
+            <option value="III">III</option>
+            <option value="IV">IV</option>
+        </select>
+
+    </div>
+
+    <div id="subjects-area" class="mt-6 grid grid-cols-2 gap-4"></div>
+
+    <button onclick="saveManualResult()" class="mt-6 bg-navy text-white px-4 py-2 rounded">
+        Save Result
+    </button>
+</div>
                 <div class="p-6 border rounded bg-green-50">
                     <h3 class="font-bold mb-3">Bulk Upload (Excel)</h3>
+                    <button onclick="downloadTemplate()"
+class="mb-3 bg-blue-600 text-white px-4 py-2 rounded w-full">
+Download Excel Template
+</button>
                     <p class="text-xs mb-2">Required Columns: student_id, name, dob, class, [subject_names...]</p>
                     <input type="file" id="excel-file" accept=".xlsx, .xls" class="mb-3">
                     <button onclick="handleExcel()" class="bg-green-700 text-white px-4 py-2 rounded w-full">Upload & Process</button>
@@ -131,8 +163,92 @@ const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const sb = window.supabase.createClient(SB_URL, SB_KEY);
 
         let publishDate = null;
+const SUBJECTS = {
 
+    "I": {
+        english: 100,
+        malayalam: 100,
+        hindhi: 100,
+        arabi: 100,
+        evs: 100,
+        gk: 50,
+        IT: 50,
+        maths: 100
+    },
+
+    "II": {
+        english: 100,
+        malayalam: 100,
+        hindhi: 100,
+        arabi: 100,
+        evs: 100,
+        gk: 50,
+        IT: 50,
+        maths: 100
+    },
+
+    "III": {
+        english: 100,
+        malayalam: 100,
+        hindhi: 100,
+        arabi: 100,
+        science: 100,
+        gk: 50,
+        IT: 50,
+        maths: 100,
+        "social science": 100
+    },
+
+    "IV": {
+        english: 100,
+        malayalam: 100,
+        hindhi: 100,
+        arabi: 100,
+        science: 100,
+        gk: 50,
+        IT: 50,
+        maths: 100,
+        "social science": 100
+    }
+};
         // Initialize and check timer
+        function loadSubjects() {
+
+    const cls = document.getElementById('m-class').value;
+
+    const area = document.getElementById('subjects-area');
+
+    area.innerHTML = '';
+
+    if(cls === 'KG') {
+
+        area.innerHTML = `
+            <input type="text" id="kg-subjects"
+            placeholder="Enter subjects comma separated"
+            class="p-2 border rounded col-span-2">
+        `;
+
+        return;
+    }
+
+    const subs = SUBJECTS[cls];
+
+    for(const subject in subs) {
+
+        area.innerHTML += `
+            <div>
+                <label class="block font-semibold">
+                    ${subject} (${subs[subject]})
+                </label>
+
+                <input type="number"
+                id="sub-${subject}"
+                class="w-full p-2 border rounded"
+                placeholder="Marks">
+            </div>
+        `;
+    }
+}
         async function init() {
             const { data } = await sb.from('settings').select('value').eq('key', 'publish_time').single();
             if (data) {
@@ -240,6 +356,196 @@ function toggleAdminModal() {
             const element = document.getElementById('printable-area');
             html2pdf().from(element).save(`Result_${document.getElementById('res-id').innerText}.pdf`);
         }
+        function calculateGrade(percentage) {
+
+    if(percentage >= 90) return 'A+';
+    if(percentage >= 80) return 'A';
+    if(percentage >= 70) return 'B+';
+    if(percentage >= 60) return 'B';
+    if(percentage >= 50) return 'C+';
+    if(percentage >= 40) return 'C';
+
+    return 'F';
+}
+
+async function saveManualResult() {
+
+    const student_id = document.getElementById('m-student-id').value;
+    const student_name = document.getElementById('m-name').value;
+    const dob = document.getElementById('m-dob').value;
+    const grade_level = document.getElementById('m-class').value;
+
+    let marks = {};
+    let totalConfig = {};
+
+    let total = 0;
+    let obtained = 0;
+
+    if(grade_level === 'KG') {
+
+        alert("KG custom subjects can be added later");
+        return;
+    }
+
+    const subjects = SUBJECTS[grade_level];
+
+    for(const sub in subjects) {
+
+        const value = Number(document.getElementById(`sub-${sub}`).value || 0);
+
+        marks[sub] = value;
+
+        totalConfig[sub] = subjects[sub];
+
+        obtained += value;
+
+        total += subjects[sub];
+    }
+
+    const percentage = ((obtained / total) * 100).toFixed(2);
+
+    const overall_grade = calculateGrade(percentage);
+
+    // Rank Calculation
+    const { data: classData } = await sb
+        .from('results')
+        .select('*')
+        .eq('grade_level', grade_level);
+
+    let rank = 1;
+
+    if(classData) {
+
+        rank = classData.filter(
+            x => Number(x.percentage) > Number(percentage)
+        ).length + 1;
+    }
+
+    const payload = {
+        student_id,
+        student_name,
+        dob,
+        grade_level,
+        marks,
+        total_marks_config: totalConfig,
+        overall_marks: obtained,
+        percentage,
+        overall_grade,
+        rank
+    };
+
+    const { error } = await sb
+        .from('results')
+        .insert(payload);
+
+    if(error) {
+        console.log(error);
+        alert("Error saving result");
+    } else {
+        alert("Result Saved Successfully");
+    }
+}
+        function downloadTemplate() {
+
+    const data = [
+        {
+            student_id: '',
+            name: '',
+            dob: '',
+            class: '',
+            english: '',
+            malayalam: '',
+            hindhi: '',
+            arabi: '',
+            maths: ''
+        }
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(data);
+
+    const wb = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(wb, ws, "Results");
+
+    XLSX.writeFile(wb, "result_template.xlsx");
+}
+        async function handleExcel() {
+
+    const file = document.getElementById('excel-file').files[0];
+
+    if(!file) {
+        alert("Select Excel File");
+        return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = async (e) => {
+
+        const data = new Uint8Array(e.target.result);
+
+        const workbook = XLSX.read(data, { type: 'array' });
+
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+        const rows = XLSX.utils.sheet_to_json(sheet);
+
+        for(const row of rows) {
+
+            let marks = {};
+
+            let total = 0;
+            let obtained = 0;
+
+            const cls = row.class;
+
+            const subs = SUBJECTS[cls];
+
+            for(const sub in subs) {
+
+                const val = Number(row[sub] || 0);
+
+                marks[sub] = val;
+
+                obtained += val;
+
+                total += subs[sub];
+            }
+
+            const percentage = ((obtained / total) * 100).toFixed(2);
+
+            const grade = calculateGrade(percentage);
+
+            await sb.from('results').insert({
+
+                student_id: row.student_id,
+
+                student_name: row.name,
+
+                dob: row.dob,
+
+                grade_level: cls,
+
+                marks,
+
+                total_marks_config: subs,
+
+                overall_marks: obtained,
+
+                percentage,
+
+                overall_grade: grade,
+
+                rank: 1
+
+            });
+        }
+
+        alert("Excel Upload Completed");
+    };
+
+    reader.readAsArrayBuffer(file);
+}
 function logout() {
     document.getElementById('admin-dashboard').classList.add('hidden');
 }
