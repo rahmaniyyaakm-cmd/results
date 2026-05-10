@@ -3,211 +3,235 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Result Management System | Rahmaniyya Public School</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <title>Rahmaniyya Public School - Result Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        :root { --navy: #001f3f; --white: #ffffff; --gray: #f8f9fa; --border: #dee2e6; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; background-color: var(--white); color: #333; }
-        header, footer { background-color: var(--navy); color: var(--white); text-align: center; padding: 1.5rem; }
-        main { min-height: 85vh; display: flex; flex-direction: column; align-items: center; padding: 2rem; position: relative; }
-        .logo-watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.05; z-index: -1; width: 350px; }
-        .card { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); width: 100%; max-width: 600px; text-align: center; margin-bottom: 2rem; }
-        .hidden { display: none; }
-        input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid var(--border); border-radius: 5px; box-sizing: border-box; }
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
-        .btn-primary { background: var(--navy); color: white; }
-        .btn-success { background: #28a745; color: white; }
-        .btn-link { background: none; color: var(--navy); text-decoration: underline; font-size: 0.9rem; }
-        #countdown { font-size: 2.5rem; font-weight: 800; color: var(--navy); margin: 15px 0; }
-        .admin-nav { display: flex; gap: 10px; margin-bottom: 20px; }
-        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
-        th { background: var(--navy); color: white; }
+        body { background-color: #f8fafc; font-family: 'Inter', sans-serif; }
+        .bg-navy { background-color: #001f3f; }
+        .text-navy { color: #001f3f; }
+        .watermark {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            opacity: 0.05; z-index: -1; width: 400px; pointer-events: none;
+        }
     </style>
 </head>
 <body>
 
-<header>
-    <div style="font-size: 1.4rem; font-weight: bold;">RAHMANIYYA PUBLIC SCHOOL</div>
-    <div style="font-size: 0.9rem; letter-spacing: 2px;">AKAMPADAM</div>
-</header>
+    <img src="logo rah.png" alt="Logo" class="watermark">
 
-<main>
-    <img src="image_856095.png" class="logo-watermark" alt="Logo">
-
-    <!-- 1. PUBLIC VIEW: TIMER -->
-    <div id="view-timer" class="card">
-        <h3>RESULTS ANNOUNCEMENT</h3>
-        <div id="countdown">00:00:00</div>
-        <button class="btn btn-link" onclick="showSection('view-login-admin')">Admin Login</button>
-    </div>
-
-    <!-- 2. PUBLIC VIEW: STUDENT LOGIN -->
-    <div id="view-login-student" class="card hidden">
-        <h2>Check Result</h2>
-        <input type="text" id="stu-adm" placeholder="Admission Number">
-        <input type="date" id="stu-dob">
-        <button class="btn btn-primary" onclick="studentLogin()">VIEW MARK SHEET</button>
-        <button class="btn btn-link" onclick="showSection('view-login-admin')">Admin Login</button>
-    </div>
-
-    <!-- 3. ADMIN LOGIN -->
-    <div id="view-login-admin" class="card hidden">
-        <h2>Admin Authentication</h2>
-        <input type="text" id="admin-id" placeholder="Login ID">
-        <input type="password" id="admin-pass" placeholder="Password">
-        <button class="btn btn-primary" onclick="adminLogin()">LOGIN</button>
-        <button class="btn btn-link" onclick="checkTimerStatus()">Back to Portal</button>
-    </div>
-
-    <!-- 4. ADMIN DASHBOARD -->
-    <div id="view-admin-dash" class="card hidden" style="max-width: 900px;">
-        <h2>Admin Dashboard</h2>
-        <div class="admin-nav">
-            <button class="btn btn-primary" onclick="downloadTemplate()">Download Excel Template</button>
-            <button class="btn btn-success" onclick="document.getElementById('excel-upload').click()">Upload Results</button>
-            <input type="file" id="excel-upload" class="hidden" accept=".xlsx, .xls" onchange="handleExcel(event)">
+    <header class="bg-navy text-white p-4 shadow-lg flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <img src="logo rah.png" alt="Logo" class="h-12 w-12 bg-white rounded-full p-1">
+            <h1 class="text-xl font-bold uppercase tracking-wider">Rahmaniyya Public School Akampadam</h1>
         </div>
-        <hr>
-        <h3>Set Publish Schedule</h3>
-        <input type="datetime-local" id="sched-time">
-        <button class="btn btn-primary" onclick="saveSchedule()">Save Schedule</button>
-        <button class="btn btn-link" style="color:red" onclick="logout()">Logout</button>
-    </div>
+        <button onclick="toggleAdminModal()" class="text-sm border border-white px-3 py-1 rounded hover:bg-white hover:text-navy transition">Admin Login</button>
+    </header>
 
-    <!-- 5. RESULT DISPLAY -->
-    <div id="view-result" class="card hidden" style="max-width: 800px;">
-        <div id="result-sheet"></div>
-        <button class="btn btn-primary" onclick="window.print()">Download as PDF</button>
-        <button class="btn btn-link" onclick="location.reload()">Back</button>
-    </div>
-</main>
-
-<footer>&copy; 2026 Rahmaniyya Public School Akampadam</footer>
-
-<script>
-    // --- INITIALIZATION ---
-    const _URL = 'https://wyxgixlqgwjexlkwccpf.supabase.co';
-    const _KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5eGdpeGxxZ3dqZXhsa3djY3BmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDEyNzIsImV4cCI6MjA5MzkxNzI3Mn0.udgw8JRxGNUdcT9mY7_hsnIwPtheNKm3qhCm_Y0GUec';
-    const supabase = supabase.createClient(_URL, _KEY);
-
-    let publishTimestamp = null;
-
-    // --- NAVIGATION ---
-    function showSection(id) {
-        ['view-timer', 'view-login-student', 'view-login-admin', 'view-admin-dash', 'view-result'].forEach(s => {
-            document.getElementById(s).classList.add('hidden');
-        });
-        document.getElementById(id).classList.remove('hidden');
-    }
-
-    // --- AUTHENTICATION ---
-    function adminLogin() {
-        const id = document.getElementById('admin-id').value;
-        const pw = document.getElementById('admin-pass').value;
-        if(id === 'admin' && pw === 'Rahmaniyya@2004') {
-            showSection('view-admin-dash');
-        } else {
-            alert('Access Denied: Invalid Credentials');
-        }
-    }
-
-    function logout() { location.reload(); }
-
-    // --- TIMER LOGIC ---
-    async function checkTimerStatus() {
-        // Fetch schedule from Supabase (assuming a 'settings' table exists)
-        const { data } = await supabase.from('settings').select('value').eq('key', 'publish_time').single();
-        if(data) {
-            publishTimestamp = new Date(data.value).getTime();
-            startCountdown();
-        } else {
-            showSection('view-login-student'); // Default if no timer set
-        }
-    }
-
-    function startCountdown() {
-        const timer = setInterval(() => {
-            const now = new Date().getTime();
-            const diff = publishTimestamp - now;
-            if(diff <= 0) {
-                clearInterval(timer);
-                showSection('view-login-student');
-            } else {
-                const h = Math.floor(diff / 3600000);
-                const m = Math.floor((diff % 3600000) / 60000);
-                const s = Math.floor((diff % 60000) / 1000);
-                document.getElementById('countdown').innerText = `${h}h ${m}m ${s}s`;
-            }
-        }, 1000);
-    }
-
-    async function saveSchedule() {
-        const val = document.getElementById('sched-time').value;
-        const { error } = await supabase.from('settings').upsert({ key: 'publish_time', value: val });
-        if(!error) alert('Schedule Updated!');
-    }
-
-    // --- DATA HANDLING ---
-    function downloadTemplate() {
-        const ws = XLSX.utils.json_to_sheet([{
-            admission_no: "2025/001", dob: "2015-06-15", name: "Student Name", grade_level: "Grade I",
-            english: 0, malayalam: 0, hindhi: 0, arabi: 0, maths: 0, evs: 0, gk: 0, it: 0, science: 0, social_science: 0
-        }]);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Results");
-        XLSX.writeFile(wb, "Result_Template.xlsx");
-    }
-
-    function handleExcel(e) {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = async (event) => {
-            const data = new Uint8Array(event.target.result);
-            const workbook = XLSX.read(data, {type: 'array'});
-            const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+    <main class="container mx-auto mt-10 p-4 max-w-2xl">
+        <div id="user-section" class="bg-white p-8 rounded-xl shadow-md border-t-4 border-navy">
+            <h2 class="text-2xl font-bold mb-6 text-center text-navy">Student Result Portal</h2>
             
-            // Upload to Supabase 'results' table
-            const { error } = await supabase.from('results').upsert(jsonData);
-            if(!error) alert('Results uploaded successfully!');
-            else console.error(error);
-        };
-        reader.readAsArrayBuffer(file);
-    }
-
-    async function studentLogin() {
-        const adm = document.getElementById('stu-adm').value;
-        const dob = document.getElementById('stu-dob').value;
-        const { data, error } = await supabase.from('results').select('*').eq('admission_no', adm).eq('dob', dob).single();
-        
-        if(data) {
-            renderResult(data);
-            showSection('view-result');
-        } else {
-            alert('Student not found.');
-        }
-    }
-
-    function renderResult(s) {
-        const pct = (s.total_marks / s.max_possible) * 100;
-        document.getElementById('result-sheet').innerHTML = `
-            <h2 style="color:var(--navy)">RESULT SLIP</h2>
-            <p><strong>Name:</strong> ${s.name} | <strong>Class:</strong> ${s.grade_level}</p>
-            <table border="1">
-                <tr><th>Subject</th><th>Marks</th></tr>
-                <tr><td>English</td><td>${s.english}</td></tr>
-                <tr><td>Maths</td><td>${s.maths}</td></tr>
-                <!-- Dynamic subjects would go here -->
-            </table>
-            <div style="background:#eee; padding:10px; display:flex; justify-content:space-between">
-                <span>Rank: ${s.rank}</span>
-                <span>Percentage: ${pct.toFixed(2)}%</span>
+            <div id="timer-container" class="hidden mb-6 p-4 bg-yellow-50 border border-yellow-200 text-center rounded-lg">
+                <p class="text-sm text-yellow-700 font-medium">Results will be published in:</p>
+                <div id="countdown" class="text-2xl font-mono font-bold text-navy">00:00:00:00</div>
             </div>
-        `;
-    }
 
-    checkTimerStatus();
-</script>
+            <div id="search-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-600">Admission Number / Student ID</label>
+                    <input type="text" id="search-sid" class="w-full p-3 border rounded focus:ring-2 focus:ring-navy outline-none" placeholder="Enter ID">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-600">Date of Birth</label>
+                    <input type="date" id="search-dob" class="w-full p-3 border rounded focus:ring-2 focus:ring-navy outline-none">
+                </div>
+                <button onclick="checkResult()" class="w-full bg-navy text-white py-3 rounded-lg font-bold hover:bg-blue-900 transition shadow-md">VIEW RESULT</button>
+            </div>
+        </div>
+
+        <div id="result-card" class="hidden mt-6 bg-white p-6 rounded shadow-lg border border-gray-200">
+            <div id="printable-area">
+                <div class="text-center border-b-2 border-navy pb-4 mb-4">
+                    <h3 class="text-xl font-black">RAHMANIYYA PUBLIC SCHOOL</h3>
+                    <p class="text-sm font-bold">AKAMPADAM</p>
+                </div>
+                <div class="grid grid-cols-2 gap-4 text-sm mb-4">
+                    <p><strong>Student Name:</strong> <span id="res-name"></span></p>
+                    <p><strong>Date of Birth:</strong> <span id="res-dob"></span></p>
+                    <p><strong>Admission No:</strong> <span id="res-id"></span></p>
+                    <p><strong>Class:</strong> <span id="res-class"></span></p>
+                </div>
+                <table class="w-full text-sm border-collapse border border-gray-400 mb-4">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="border border-gray-400 p-2 text-left">Subject</th>
+                            <th class="border border-gray-400 p-2">Awarded Marks</th>
+                            <th class="border border-gray-400 p-2">Total Marks</th>
+                        </tr>
+                    </thead>
+                    <tbody id="res-table-body"></tbody>
+                </table>
+                <div class="grid grid-cols-4 gap-2 text-center text-xs font-bold mb-4">
+                    <div class="border p-2">Overall Marks: <span id="res-total"></span></div>
+                    <div class="border p-2">Percentage: <span id="res-perc"></span>%</div>
+                    <div class="border p-2">Grade: <span id="res-grade"></span></div>
+                    <div class="border p-2">Rank: <span id="res-rank"></span></div>
+                </div>
+            </div>
+            <button onclick="downloadPDF()" class="mt-4 w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 transition">Download as PDF</button>
+        </div>
+    </main>
+
+    <div id="admin-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-md">
+            <h2 class="text-2xl font-bold mb-4 text-navy">Admin Access</h2>
+            <input type="text" id="admin-id" placeholder="Login ID" class="w-full p-2 border rounded mb-3">
+            <input type="password" id="admin-pw" placeholder="Password" class="w-full p-2 border rounded mb-4">
+            <div class="flex gap-2">
+                <button onclick="loginAdmin()" class="flex-1 bg-navy text-white py-2 rounded">Login</button>
+                <button onclick="toggleAdminModal()" class="flex-1 bg-gray-200 py-2 rounded">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-dashboard" class="hidden fixed inset-0 bg-gray-100 overflow-y-auto p-6">
+        <div class="max-w-6xl mx-auto bg-white p-8 rounded shadow-lg">
+            <div class="flex justify-between items-center mb-8 border-b pb-4">
+                <h2 class="text-3xl font-bold text-navy">Admin Dashboard</h2>
+                <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded">Logout</button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="p-6 border rounded bg-blue-50">
+                    <h3 class="font-bold mb-3">Schedule Publication</h3>
+                    <input type="datetime-local" id="publish-time" class="p-2 border rounded w-full mb-3">
+                    <button onclick="saveSchedule()" class="bg-navy text-white px-4 py-2 rounded w-full">Set Timer</button>
+                </div>
+
+                <div class="p-6 border rounded bg-green-50">
+                    <h3 class="font-bold mb-3">Bulk Upload (Excel)</h3>
+                    <p class="text-xs mb-2">Required Columns: student_id, name, dob, class, [subject_names...]</p>
+                    <input type="file" id="excel-file" accept=".xlsx, .xls" class="mb-3">
+                    <button onclick="handleExcel()" class="bg-green-700 text-white px-4 py-2 rounded w-full">Upload & Process</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SB_URL = "https://wyxgixlqgwjexlkwccpf.supabase.co";
+        const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."; // Full key from prompt
+        const supabase = supabase.createClient(SB_URL, SB_KEY);
+
+        let publishDate = null;
+
+        // Initialize and check timer
+        async function init() {
+            const { data } = await supabase.from('settings').select('value').eq('key', 'publish_time').single();
+            if (data) {
+                publishDate = new Date(data.value);
+                startCountdown();
+            }
+        }
+
+        function startCountdown() {
+            const timerContainer = document.getElementById('timer-container');
+            const countdownEl = document.getElementById('countdown');
+            
+            const interval = setInterval(() => {
+                const now = new Date().getTime();
+                const distance = publishDate - now;
+
+                if (distance < 0) {
+                    clearInterval(interval);
+                    timerContainer.classList.add('hidden');
+                    return;
+                }
+
+                timerContainer.classList.remove('hidden');
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                countdownEl.innerHTML = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+            }, 1000);
+        }
+
+        async function checkResult() {
+            if (publishDate && new Date() < publishDate) {
+                alert("Results are not yet published. Please wait for the timer.");
+                return;
+            }
+
+            const sid = document.getElementById('search-sid').value;
+            const dob = document.getElementById('search-dob').value;
+
+            const { data, error } = await supabase
+                .from('results')
+                .select('*')
+                .eq('student_id', sid)
+                .eq('dob', dob)
+                .single();
+
+            if (data) {
+                displayResult(data);
+            } else {
+                alert("No result found. Please check your details.");
+            }
+        }
+
+        function displayResult(data) {
+            document.getElementById('search-form').classList.add('hidden');
+            document.getElementById('result-card').classList.remove('hidden');
+            
+            document.getElementById('res-name').innerText = data.student_name;
+            document.getElementById('res-dob').innerText = data.dob;
+            document.getElementById('res-id').innerText = data.student_id;
+            document.getElementById('res-class').innerText = data.grade_level;
+            
+            let html = '';
+            for (const [sub, mark] of Object.entries(data.marks)) {
+                html += `<tr><td class="border border-gray-400 p-2">${sub}</td><td class="border border-gray-400 p-2 text-center">${mark}</td><td class="border border-gray-400 p-2 text-center">${data.total_marks_config[sub] || 100}</td></tr>`;
+            }
+            document.getElementById('res-table-body').innerHTML = html;
+            document.getElementById('res-total').innerText = data.overall_marks;
+            document.getElementById('res-perc').innerText = data.percentage;
+            document.getElementById('res-grade').innerText = data.overall_grade;
+            document.getElementById('res-rank').innerText = data.rank;
+        }
+
+        // Admin Logics
+        function toggleAdminModal() {
+            document.getElementById('admin-modal').classList.toggle('hidden');
+        }
+
+        function loginAdmin() {
+            const id = document.getElementById('admin-id').value;
+            const pw = document.getElementById('admin-pw').value;
+            if(id === 'admin' && pw === 'Rahmaniyya@2004') {
+                document.getElementById('admin-modal').classList.add('hidden');
+                document.getElementById('admin-dashboard').classList.remove('hidden');
+            } else {
+                alert("Invalid Credentials");
+            }
+        }
+
+        async function saveSchedule() {
+            const time = document.getElementById('publish-time').value;
+            await supabase.from('settings').upsert({ key: 'publish_time', value: time });
+            alert("Schedule Updated!");
+            location.reload();
+        }
+
+        function downloadPDF() {
+            const element = document.getElementById('printable-area');
+            html2pdf().from(element).save(`Result_${document.getElementById('res-id').innerText}.pdf`);
+        }
+
+        init();
+    </script>
 </body>
 </html>
