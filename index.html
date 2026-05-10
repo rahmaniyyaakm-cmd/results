@@ -87,8 +87,8 @@
         </div>
     </main>
 
- <div id="admin-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50">
-        <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-md">
+<div id="admin-modal" style="display:none;" class="fixed inset-0 bg-black/50 items-center justify-center p-4 z-50">      
+    <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-md">
             <h2 class="text-2xl font-bold mb-4 text-navy">Admin Access</h2>
             <input type="text" id="admin-id" placeholder="Login ID" class="w-full p-2 border rounded mb-3">
             <input type="password" id="admin-pw" placeholder="Password" class="w-full p-2 border rounded mb-4">
@@ -206,15 +206,13 @@
         }
 
         // Admin Logics
-       function toggleAdminModal() {
+  function toggleAdminModal() {
     const modal = document.getElementById('admin-modal');
 
-    if (modal.classList.contains('hidden')) {
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
+    if (modal.style.display === "flex") {
+        modal.style.display = "none";
     } else {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
+        modal.style.display = "flex";
     }
 }
 
@@ -240,7 +238,9 @@
             const element = document.getElementById('printable-area');
             html2pdf().from(element).save(`Result_${document.getElementById('res-id').innerText}.pdf`);
         }
-
+function logout() {
+    document.getElementById('admin-dashboard').classList.add('hidden');
+}
         init();
     </script>
 </body>
