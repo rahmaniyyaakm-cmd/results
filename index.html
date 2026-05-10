@@ -124,15 +124,17 @@
     </div>
 
     <script>
-        const SB_URL = "https://wyxgixlqgwjexlkwccpf.supabase.co";
-        const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5eGdpeGxxZ3dqZXhsa3djY3BmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDEyNzIsImV4cCI6MjA5MzkxNzI3Mn0.udgw8JRxGNUdcT9mY7_hsnIwPtheNKm3qhCm_Y0GUec"; // Full key from prompt
-        const supabase = supabase.createClient(SB_URL, SB_KEY);
+const SB_URL = "https://wyxgixlqgwjexlkwccpf.supabase.co";
+
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5eGdpeGxxZ3dqZXhsa3djY3BmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDEyNzIsImV4cCI6MjA5MzkxNzI3Mn0.udgw8JRxGNUdcT9mY7_hsnIwPtheNKm3qhCm_Y0GUec";
+
+const sb = window.supabase.createClient(SB_URL, SB_KEY);
 
         let publishDate = null;
 
         // Initialize and check timer
         async function init() {
-            const { data } = await supabase.from('settings').select('value').eq('key', 'publish_time').single();
+            const { data } = await sb.from('settings').select('value').eq('key', 'publish_time').single();
             if (data) {
                 publishDate = new Date(data.value);
                 startCountdown();
@@ -171,7 +173,7 @@
             const sid = document.getElementById('search-sid').value;
             const dob = document.getElementById('search-dob').value;
 
-            const { data, error } = await supabase
+            const { data, error } = await sb
                 .from('results')
                 .select('*')
                 .eq('student_id', sid)
@@ -229,7 +231,7 @@ function toggleAdminModal() {
 
         async function saveSchedule() {
             const time = document.getElementById('publish-time').value;
-            await supabase.from('settings').upsert({ key: 'publish_time', value: time });
+            await sb.from('settings').upsert({ key: 'publish_time', value: time });
             alert("Schedule Updated!");
             location.reload();
         }
